@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF reader dark theme</title>
-    <link rel="icon" href="unnamed.png" type="image/ico">
+    <title>Modern PDF Reader</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        /* Bảng màu Modern Dark Theme */
+        /* Bảng màu Modern Dark Theme - Đã set nền mặc định là xám đen */
         :root {
-            --bg-body: #0d1117;
-            --bg-toolbar: #161b22;
+            --bg-body: #1e1e24; /* Xám đen chuyên nghiệp */
+            --bg-toolbar: rgba(22, 27, 34, 0.85); /* Nền bán trong suốt */
             --bg-group: #21262d;
             --border: #30363d;
             --text-main: #c9d1d9;
             --accent: #238636;
             --accent-hover: #2ea043;
-            --radius: 8px;
+            --radius: 12px;
         }
 
         body {
@@ -28,18 +27,19 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transition: background-color 0.3s ease;
         }
 
         /* Tùy chỉnh thanh cuộn siêu mượt */
-        ::-webkit-scrollbar { width: 12px; }
-        ::-webkit-scrollbar-track { background: var(--bg-body); }
-        ::-webkit-scrollbar-thumb { background: #484f58; border-radius: 6px; border: 3px solid var(--bg-body); }
-        ::-webkit-scrollbar-thumb:hover { background: #8b949e; }
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(139, 148, 158, 0.4); border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(139, 148, 158, 0.8); }
 
         /* Vùng kéo thả file */
         #drop-zone {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(13, 17, 23, 0.9);
+            background: rgba(30, 30, 36, 0.9);
             color: var(--accent); font-size: 32px; font-weight: bold;
             display: none; justify-content: center; align-items: center;
             z-index: 9999; border: 4px dashed var(--accent);
@@ -47,28 +47,42 @@
         }
         body.drag-over #drop-zone { display: flex; }
 
-        /* Toolbar giao diện mới */
+        /* Floating Toolbar - Tự động ẩn hiện chuyên nghiệp */
         .toolbar {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
             background-color: var(--bg-toolbar);
-            border-bottom: 1px solid var(--border);
-            padding: 12px 20px;
+            backdrop-filter: blur(10px); /* Hiệu ứng kính mờ */
+            -webkit-backdrop-filter: blur(10px);
+            padding: 10px 16px;
             display: flex;
-            gap: 15px;
+            gap: 12px;
             align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            z-index: 10;
+            border-radius: var(--radius);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 1px 3px rgba(255,255,255,0.1) inset;
+            z-index: 1000;
+            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 1;
+            border: 1px solid rgba(255,255,255,0.05);
+            flex-wrap: nowrap;
         }
 
-        /* Phân cụm công cụ */
+        /* Class dùng để ẩn toolbar bằng JS */
+        .toolbar.hidden {
+            opacity: 0;
+            transform: translate(-50%, 20px);
+            pointer-events: none;
+        }
+
         .tool-group {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             background: var(--bg-group);
-            padding: 6px 12px;
-            border-radius: var(--radius);
+            padding: 6px 10px;
+            border-radius: 8px;
             border: 1px solid var(--border);
         }
 
@@ -76,7 +90,7 @@
             background-color: transparent;
             color: var(--text-main);
             border: 1px solid transparent;
-            padding: 6px 12px;
+            padding: 6px 10px;
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -84,51 +98,54 @@
             outline: none;
         }
 
-        /* Style riêng cho các element */
         button:hover:not(:disabled) { background-color: rgba(255,255,255,0.1); border-color: #8b949e; }
         button:disabled { color: #484f58; cursor: not-allowed; }
         
-        select { border-color: var(--border); background-color: var(--bg-body); }
-        input[type="file"] { max-width: 220px; padding: 4px; font-size: 13px; }
+        select { border-color: var(--border); background-color: #161b22; }
+        input[type="file"] { max-width: 200px; padding: 4px; font-size: 13px; }
         
+        /* Chỉnh ô nhập trang */
         #page-input {
-            width: 45px; text-align: center; font-weight: bold;
-            background: var(--bg-body); border: 1px solid var(--border);
+            width: 25px; text-align: center; font-weight: bold;
+            background: rgba(0,0,0,0.2); border: 1px solid var(--border);
         }
         #page-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+        /* Input đổi màu */
+        #bg-color-picker {
+            width: 28px; height: 28px; padding: 0;
+            border: none; border-radius: 50%;
+            cursor: pointer; overflow: hidden;
+        }
+        #bg-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+        #bg-color-picker::-webkit-color-swatch { border: 1px solid var(--border); border-radius: 50%; }
 
         .btn-primary { background-color: var(--accent); color: white; font-weight: 600; }
         .btn-primary:hover:not(:disabled) { background-color: var(--accent-hover); border-color: transparent; }
 
         #zoom-level { font-weight: bold; width: 50px; text-align: center; font-size: 13px; color: #8b949e; }
 
-        /* Container chứa PDF */
         #viewer-container {
             flex: 1;
             overflow-y: auto;
-            padding: 30px 20px;
+            padding: 30px 20px 100px 20px; /* Thêm padding bottom để k bị toolbar che mất trang cuối */
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 30px;
         }
 
-        /* Lõi đảo màu áp dụng trực tiếp lên Canvas (Viền đẹp hơn) */
         canvas {
             display: block;
-            background-color: white; /* Bắt buộc nền trắng */
+            background-color: white; 
             filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
             border-radius: 4px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
             max-width: 100%;
             height: auto;
         }
 
-        .double-page-wrapper {
-            display: flex; flex-direction: row; justify-content: center; gap: 15px; width: 100%;
-        }
-        
-        /* Chống tràn ngang khi xem trang đôi */
+        .double-page-wrapper { display: flex; flex-direction: row; justify-content: center; gap: 15px; width: 100%; }
         .double-page-wrapper canvas { max-width: calc(50% - 15px); }
         .page-placeholder { width: 100%; display: flex; justify-content: center; }
 
@@ -143,7 +160,7 @@
 
     <div id="drop-zone">THẢ FILE VÀO ĐÂY</div>
 
-    <div class="toolbar">
+    <div class="toolbar" id="toolbar">
         <div class="tool-group">
             <input type="file" id="file-upload" accept="application/pdf" title="Chọn file PDF" />
         </div>
@@ -158,8 +175,9 @@
 
         <div class="tool-group">
             <button id="prev-page" disabled>◀</button>
-            <span style="font-size: 14px;">
-                <input type="number" id="page-input" value="0" min="1" disabled /> / <span id="page-count">0</span>
+            <span style="font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                <input type="number" id="page-input" value="0" min="1" disabled title="Bấm Lên/Xuống để đổi trang" /> 
+                <span>/ <span id="page-count">0</span></span>
             </span>
             <button id="next-page" disabled>▶</button>
         </div>
@@ -171,7 +189,11 @@
         </div>
 
         <div class="tool-group">
-            <button id="btn-print" class="btn-primary" disabled>🖨️ In / Xuất PDF</button>
+            <input type="color" id="bg-color-picker" value="#1e1e24" title="Chỉnh màu nền giao diện" />
+        </div>
+
+        <div class="tool-group">
+            <button id="btn-print" class="btn-primary" disabled>🖨️</button>
         </div>
     </div>
 
@@ -183,13 +205,41 @@
         let pdfDoc = null,
             pageNum = 1,
             scale = 1.5,
-            currentMode = 'scroll'; // Mặc định chế độ cuộn cho tiện
+            currentMode = 'scroll'; 
 
         const viewerContainer = document.getElementById('viewer-container');
         const pageInput = document.getElementById('page-input');
         const zoomLabel = document.getElementById('zoom-level');
-        let isZooming = false; // Cờ chặn observer nhảy số khi đang zoom
+        const toolbar = document.getElementById('toolbar');
+        let isZooming = false; 
 
+        // --- XỬ LÝ ẨN/HIỆN TOOLBAR ---
+        let toolbarTimeout;
+        const wakeUpToolbar = (e) => {
+            toolbar.classList.remove('hidden');
+            clearTimeout(toolbarTimeout);
+            
+            // Nếu chuột không nằm sát vùng dưới cùng (cách đáy 100px), đếm ngược 2.5s để ẩn
+            if (!e || e.clientY < window.innerHeight - 100) {
+                toolbarTimeout = setTimeout(() => {
+                    // Không ẩn nếu đang hover thẳng vào toolbar
+                    if (!toolbar.matches(':hover')) {
+                        toolbar.classList.add('hidden');
+                    }
+                }, 2500);
+            }
+        };
+
+        window.addEventListener('mousemove', wakeUpToolbar);
+        viewerContainer.addEventListener('scroll', wakeUpToolbar);
+        wakeUpToolbar(); // Chạy lần đầu để setup timer
+
+        // --- XỬ LÝ MÀU NỀN ---
+        document.getElementById('bg-color-picker').addEventListener('input', (e) => {
+            document.documentElement.style.setProperty('--bg-body', e.target.value);
+        });
+
+        // --- RENDER PDF ---
         const updateZoomLabel = () => { zoomLabel.textContent = Math.round(scale * 100) + '%'; };
 
         const renderCanvas = (num, canvasContext, canvasElement) => {
@@ -226,25 +276,23 @@
                 viewerContainer.appendChild(wrapper);
             } 
             else if (currentMode === 'scroll') {
-                isZooming = preserveScroll; // Khóa cập nhật pageNum tự động nếu đang zoom
+                isZooming = preserveScroll; 
                 
                 for (let i = 1; i <= pdfDoc.numPages; i++) {
                     const placeholder = document.createElement('div');
                     placeholder.className = 'page-placeholder';
                     placeholder.dataset.pageNo = i;
-                    // Tính toán chiều cao linh động theo scale để khung không bị giật
                     placeholder.style.minHeight = (800 * (scale / 1.5)) + 'px'; 
                     viewerContainer.appendChild(placeholder);
                     observer.observe(placeholder);
                 }
                 
-                // THUẬT TOÁN GHIM TRANG: Sau khi render lại sườn, lập tức trượt về trang cũ
                 setTimeout(() => {
                     const targetDiv = viewerContainer.querySelector(`[data-page-no="${pageNum}"]`);
                     if (targetDiv) {
                         targetDiv.scrollIntoView({ behavior: preserveScroll ? 'auto' : 'smooth', block: 'center' });
                     }
-                    setTimeout(() => { isZooming = false; }, 500); // Mở khóa observer sau khi cuộn xong
+                    setTimeout(() => { isZooming = false; }, 500); 
                 }, 50);
             }
         };
@@ -260,7 +308,6 @@
                             entry.target.style.minHeight = 'auto'; 
                         });
                     }
-                    // Chỉ cập nhật số trang nếu không phải đang trong quá trình nhảy do Zoom
                     if (!isZooming) {
                         pageInput.value = pageNo;
                         pageNum = pageNo;
@@ -269,30 +316,78 @@
             });
         }, { root: viewerContainer, rootMargin: '800px' });
 
-        // --- ĐIỀU KHIỂN ---
+        // --- ĐIỀU KHIỂN & BẮT SỰ KIỆN ---
         document.getElementById('view-mode').addEventListener('change', (e) => {
             currentMode = e.target.value; renderView();
         });
 
-        document.getElementById('prev-page').addEventListener('click', () => {
-            if (pageNum <= 1) return;
-            pageNum = currentMode === 'double' ? Math.max(1, pageNum - 2) : pageNum - 1;
-            renderView();
+        const changePage = (offset) => {
+            if (!pdfDoc) return;
+            let newPage = pageNum + offset;
+            if (currentMode === 'double') newPage = pageNum + (offset * 2);
+            
+            if (newPage >= 1 && newPage <= pdfDoc.numPages) {
+                pageNum = newPage;
+                if (currentMode === 'scroll') {
+                    // Trượt mượt thay vì load lại toàn bộ màn hình
+                    isZooming = true;
+                    const target = document.querySelector(`[data-page-no="${pageNum}"]`);
+                    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setTimeout(() => isZooming = false, 800);
+                    pageInput.value = pageNum;
+                } else {
+                    renderView();
+                }
+            }
+        };
+
+        document.getElementById('prev-page').addEventListener('click', () => changePage(-1));
+        document.getElementById('next-page').addEventListener('click', () => changePage(1));
+
+        // FIX LỖI INPUT: Cho phép dùng mũi tên Lên/Xuống + Enter để thao tác
+        pageInput.addEventListener('keydown', (e) => {
+            if (!pdfDoc) return;
+            if (['Enter', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+                e.preventDefault(); // Chặn hành vi native gây lỗi double trigger
+                
+                let num = parseInt(pageInput.value);
+                if (e.key === 'ArrowUp') num++;
+                if (e.key === 'ArrowDown') num--;
+
+                if (num >= 1 && num <= pdfDoc.numPages) {
+                    pageInput.value = num;
+                    pageNum = num;
+                    
+                    if (currentMode === 'scroll') {
+                        isZooming = true;
+                        const target = document.querySelector(`[data-page-no="${pageNum}"]`);
+                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => isZooming = false, 800);
+                    } else {
+                        renderView();
+                    }
+                }
+            }
         });
 
-        document.getElementById('next-page').addEventListener('click', () => {
-            if (pageNum >= pdfDoc.numPages) return;
-            pageNum = currentMode === 'double' ? Math.min(pdfDoc.numPages, pageNum + 2) : pageNum + 1;
-            renderView();
-        });
-
+        // Đề phòng người dùng gõ số rồi bấm chuột ra ngoài (Blur event)
         pageInput.addEventListener('change', (e) => {
             let num = parseInt(e.target.value);
-            if (num > 0 && num <= pdfDoc.numPages) { pageNum = num; renderView(); } 
-            else { e.target.value = pageNum; }
+            if (num >= 1 && num <= pdfDoc.numPages) {
+                pageNum = num;
+                if (currentMode === 'scroll') {
+                    isZooming = true;
+                    const target = document.querySelector(`[data-page-no="${pageNum}"]`);
+                    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => isZooming = false, 800);
+                } else {
+                    renderView();
+                }
+            } else {
+                e.target.value = pageNum;
+            }
         });
 
-        // Xử lý Zoom: Gửi tham số true để kích hoạt ghim trang
         document.getElementById('zoom-in').addEventListener('click', () => {
             scale += 0.25; updateZoomLabel(); renderView(true);
         });
@@ -304,7 +399,7 @@
 
         document.getElementById('btn-print').addEventListener('click', () => { window.print(); });
 
-        // --- HÀM LOAD FILE TỐI ƯU ---
+        // --- LOAD FILE ---
         const processFile = (file) => {
             if (file.type !== 'application/pdf') { alert('Chỉ hỗ trợ file PDF!'); return; }
             const reader = new FileReader();
@@ -313,10 +408,7 @@
                 pdfjsLib.getDocument(typedarray).promise.then(pdfDoc_ => {
                     pdfDoc = pdfDoc_;
                     document.getElementById('page-count').textContent = pdfDoc.numPages;
-                    
-                    // Mở khóa toàn bộ nút bấm
                     document.querySelectorAll('button, input#page-input').forEach(el => el.disabled = false);
-
                     pageNum = 1; scale = 1.5; updateZoomLabel();
                     document.getElementById('view-mode').value = currentMode;
                     renderView();
@@ -325,7 +417,6 @@
             reader.readAsArrayBuffer(file);
         };
 
-        // Kích hoạt Upload và Kéo Thả
         document.getElementById('file-upload').addEventListener('change', (e) => {
             if (e.target.files.length > 0) processFile(e.target.files[0]);
         });
