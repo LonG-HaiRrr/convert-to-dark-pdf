@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trình đọc PDF Nền Đen (Kéo & Thả)</title>
+    <!-- Sử dụng PDF.js phiên bản 3.x mới nhất và ổn định nhất -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Giao diện vùng kéo thả toàn màn hình */
+        #drop-zone {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            color: #4CAF50;
+            font-size: 30px;
+            font-weight: bold;
+            display: none; /* Ẩn mặc định, chỉ hiện khi kéo file vào */
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            border: 8px dashed #4CAF50;
+            box-sizing: border-box;
+            pointer-events: none; /* Tránh xung đột sự kiện chuột */
+        }
+
+        /* Kích hoạt vùng kéo thả khi có class drag-over */
+        body.drag-over #drop-zone {
+            display: flex;
+        }
+
+        .controls {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            z-index: 10;
+        }
+
+        button, input[type="file"] {
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover { background-color: #555; }
+        button:disabled { background-color: #222; color: #666; cursor: not-allowed; border-color: #333; }
+
+        /* Lõi đảo màu PDF */
+        #pdf-container {
+            filter: invert(100%) hue-rotate(180deg);
+            background-color: white; /* Bắt buộc nền trắng để đảo thành đen */
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Lớp phủ (Overlay) khi kéo thả file -->
+    <div id="drop-zone">THẢ FILE PDF VÀO ĐÂY ĐỂ MỞ</div>
+
+    <div class="controls">
+        <input type="file" id="file-upload" accept="application/pdf" />
+        <button id="prev-page" disabled>◀ Trang trước</button>
+        <span>Trang: <span id="page-num">0</span> / <span id="page-count">0</span></span>
+        <button id="next-page" disabled>Trang sau ▶</button>
+        <button id="zoom-in">Phóng to (+)</button>
+        <button id="zoom-out">Thu nhỏ (-)</button>
+    </div>
+
+    <div id="pdf-container">
+        <canvas id="pdf-render"></canvas>
+    </div>
+
+    <script>
+        // Cấu hình Worker cho thư viện (Bắt buộc với bản 3.x)
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        let pdfDoc = null,
+            pageNum = 1,
+            pageIsRendering = false,
+            pageNumIsPending = null,
+            scale = 1.5,
+            canvas = document.getElementById('pdf-render'),
+            ctx = canvas.getContext('2d');
+
+        // Hàm vẽ trang PDF lên Canvas
+        const renderPage = num => {
+            pageIsRendering = true;
+
+            pdfDoc.getPage(num).then(page => {
+                const viewport = page.getViewport({ scale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderCtx = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+
+                page.render(renderCtx).promise.then(() => {
+                    pageIsRendering = false;
+                    if (pageNumIsPending !== null) {
+                        renderPage(pageNumIsPending);
+                        pageNumIsPending = null;
+                    }
+                });
+
+                document.getElementById('page-num').textContent = num;
+            });
+        };
+
+        const queueRenderPage = num => {
+            if (pageIsRendering) {
+                pageNumIsPending = num;
+            } else {
+                renderPage(num);
+            }
+        };
+
+        // --- CÁC NÚT ĐIỀU KHIỂN ---
+        document.getElementById('prev-page').addEventListener('click', () => {
+            if (pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+        });
+
+        document.getElementById('next-page').addEventListener('click', () => {
+            if (pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+        });
+
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            scale += 0.25;
+            if (pdfDoc) queueRenderPage(pageNum);
+        });
+
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            if (scale <= 0.5) return;
+            scale -= 0.25;
+            if (pdfDoc) queueRenderPage(pageNum);
+        });
+
+        // --- HÀM XỬ LÝ ĐỌC FILE CỐT LÕI (Dùng ArrayBuffer cực kỳ ổn định) ---
+        const processFile = (file) => {
+            if (file.type !== 'application/pdf') {
+                alert('File không đúng định dạng. Vui lòng chọn file PDF!');
+                return;
+            }
+
+            // Dùng FileReader đọc file dưới dạng Binary Buffer (Chịu được file lớn)
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const typedarray = new Uint8Array(e.target.result);
+
+                // Nạp dữ liệu vào PDF.js
+                pdfjsLib.getDocument(typedarray).promise.then(pdfDoc_ => {
+                    pdfDoc = pdfDoc_;
+                    document.getElementById('page-count').textContent = pdfDoc.numPages;
+                    
+                    document.getElementById('prev-page').disabled = false;
+                    document.getElementById('next-page').disabled = false;
+
+                    pageNum = 1;
+                    renderPage(pageNum);
+                }).catch(err => {
+                    console.error("Lỗi khi giải mã PDF:", err);
+                    alert("Không thể đọc được file này. File có thể bị hỏng hoặc có mật khẩu!");
+                });
+            };
+            
+            // Bắt đầu đọc file
+            reader.readAsArrayBuffer(file);
+        };
+
+        // --- XỬ LÝ SỰ KIỆN UPLOAD QUA NÚT CHỌN FILE ---
+        document.getElementById('file-upload').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                processFile(e.target.files[0]);
+            }
+        });
+
+        // --- XỬ LÝ SỰ KIỆN KÉO THẢ (DRAG & DROP) TOÀN MÀN HÌNH ---
+        window.addEventListener('dragover', (e) => {
+            e.preventDefault(); 
+            // Thêm hiệu ứng lớp phủ khi kéo file vào màn hình
+            document.body.classList.add('drag-over');
+        });
+
+        window.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            // Xóa hiệu ứng nếu kéo chuột ra ngoài cửa sổ trình duyệt
+            if (e.clientX === 0 || e.clientY === 0) {
+                document.body.classList.remove('drag-over');
+            }
+        });
+
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            // Xóa hiệu ứng lớp phủ ngay khi thả file
+            document.body.classList.remove('drag-over');
+            
+            if (e.dataTransfer.files.length > 0) {
+                processFile(e.dataTransfer.files[0]);
+            }
+        });
+    </script>
+</body>
+</html>
