@@ -3,236 +3,338 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trình đọc PDF Nền Đen (Kéo & Thả)</title>
-    <!-- Sử dụng PDF.js phiên bản 3.x mới nhất và ổn định nhất -->
+    <title>Trình đọc PDF Nền Đen Pro (Bản Hoàn Thiện)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
+        /* Bảng màu Modern Dark Theme */
+        :root {
+            --bg-body: #0d1117;
+            --bg-toolbar: #161b22;
+            --bg-group: #21262d;
+            --border: #30363d;
+            --text-main: #c9d1d9;
+            --accent: #238636;
+            --accent-hover: #2ea043;
+            --radius: 8px;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
+            background-color: var(--bg-body);
+            color: var(--text-main);
             margin: 0;
-            padding: 20px;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        /* Giao diện vùng kéo thả toàn màn hình */
-        #drop-zone {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            color: #4CAF50;
-            font-size: 30px;
-            font-weight: bold;
-            display: none; /* Ẩn mặc định, chỉ hiện khi kéo file vào */
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            border: 8px dashed #4CAF50;
-            box-sizing: border-box;
-            pointer-events: none; /* Tránh xung đột sự kiện chuột */
-        }
-
-        /* Kích hoạt vùng kéo thả khi có class drag-over */
-        body.drag-over #drop-zone {
-            display: flex;
-        }
-
-        .controls {
-            background: #1e1e1e;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-            z-index: 10;
-        }
-
-        button, input[type="file"] {
-            background-color: #333;
-            color: white;
-            border: 1px solid #555;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        button:hover { background-color: #555; }
-        button:disabled { background-color: #222; color: #666; cursor: not-allowed; border-color: #333; }
-
-        /* Lõi đảo màu PDF */
-        #pdf-container {
-            filter: invert(100%) hue-rotate(180deg);
-            background-color: white; /* Bắt buộc nền trắng để đảo thành đen */
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
             overflow: hidden;
         }
 
+        /* Tùy chỉnh thanh cuộn siêu mượt */
+        ::-webkit-scrollbar { width: 12px; }
+        ::-webkit-scrollbar-track { background: var(--bg-body); }
+        ::-webkit-scrollbar-thumb { background: #484f58; border-radius: 6px; border: 3px solid var(--bg-body); }
+        ::-webkit-scrollbar-thumb:hover { background: #8b949e; }
+
+        /* Vùng kéo thả file */
+        #drop-zone {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(13, 17, 23, 0.9);
+            color: var(--accent); font-size: 32px; font-weight: bold;
+            display: none; justify-content: center; align-items: center;
+            z-index: 9999; border: 4px dashed var(--accent);
+            pointer-events: none;
+        }
+        body.drag-over #drop-zone { display: flex; }
+
+        /* Toolbar giao diện mới */
+        .toolbar {
+            background-color: var(--bg-toolbar);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        /* Phân cụm công cụ */
+        .tool-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-group);
+            padding: 6px 12px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+
+        button, input, select {
+            background-color: transparent;
+            color: var(--text-main);
+            border: 1px solid transparent;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            outline: none;
+        }
+
+        /* Style riêng cho các element */
+        button:hover:not(:disabled) { background-color: rgba(255,255,255,0.1); border-color: #8b949e; }
+        button:disabled { color: #484f58; cursor: not-allowed; }
+        
+        select { border-color: var(--border); background-color: var(--bg-body); }
+        input[type="file"] { max-width: 220px; padding: 4px; font-size: 13px; }
+        
+        #page-input {
+            width: 45px; text-align: center; font-weight: bold;
+            background: var(--bg-body); border: 1px solid var(--border);
+        }
+        #page-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+        .btn-primary { background-color: var(--accent); color: white; font-weight: 600; }
+        .btn-primary:hover:not(:disabled) { background-color: var(--accent-hover); border-color: transparent; }
+
+        #zoom-level { font-weight: bold; width: 50px; text-align: center; font-size: 13px; color: #8b949e; }
+
+        /* Container chứa PDF */
+        #viewer-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        /* Lõi đảo màu áp dụng trực tiếp lên Canvas (Viền đẹp hơn) */
         canvas {
             display: block;
+            background-color: white; /* Bắt buộc nền trắng */
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
             max-width: 100%;
             height: auto;
+        }
+
+        .double-page-wrapper {
+            display: flex; flex-direction: row; justify-content: center; gap: 15px; width: 100%;
+        }
+        
+        /* Chống tràn ngang khi xem trang đôi */
+        .double-page-wrapper canvas { max-width: calc(50% - 15px); }
+        .page-placeholder { width: 100%; display: flex; justify-content: center; }
+
+        @media print {
+            .toolbar { display: none !important; }
+            #viewer-container { padding: 0; gap: 0; }
+            canvas { filter: none !important; box-shadow: none !important; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Lớp phủ (Overlay) khi kéo thả file -->
-    <div id="drop-zone">THẢ FILE PDF VÀO ĐÂY ĐỂ MỞ</div>
+    <div id="drop-zone">THẢ FILE VÀO ĐÂY</div>
 
-    <div class="controls">
-        <input type="file" id="file-upload" accept="application/pdf" />
-        <button id="prev-page" disabled>◀ Trang trước</button>
-        <span>Trang: <span id="page-num">0</span> / <span id="page-count">0</span></span>
-        <button id="next-page" disabled>Trang sau ▶</button>
-        <button id="zoom-in">Phóng to (+)</button>
-        <button id="zoom-out">Thu nhỏ (-)</button>
+    <div class="toolbar">
+        <div class="tool-group">
+            <input type="file" id="file-upload" accept="application/pdf" title="Chọn file PDF" />
+        </div>
+        
+        <div class="tool-group">
+            <select id="view-mode">
+                <option value="single">Trang đơn</option>
+                <option value="double">Trang đôi</option>
+                <option value="scroll" selected>Cuộn liên tục</option>
+            </select>
+        </div>
+
+        <div class="tool-group">
+            <button id="prev-page" disabled>◀</button>
+            <span style="font-size: 14px;">
+                <input type="number" id="page-input" value="0" min="1" disabled /> / <span id="page-count">0</span>
+            </span>
+            <button id="next-page" disabled>▶</button>
+        </div>
+
+        <div class="tool-group">
+            <button id="zoom-out" disabled>➖</button>
+            <span id="zoom-level">150%</span>
+            <button id="zoom-in" disabled>➕</button>
+        </div>
+
+        <div class="tool-group">
+            <button id="btn-print" class="btn-primary" disabled>🖨️ In / Xuất PDF</button>
+        </div>
     </div>
 
-    <div id="pdf-container">
-        <canvas id="pdf-render"></canvas>
-    </div>
+    <div id="viewer-container"></div>
 
     <script>
-        // Cấu hình Worker cho thư viện (Bắt buộc với bản 3.x)
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         let pdfDoc = null,
             pageNum = 1,
-            pageIsRendering = false,
-            pageNumIsPending = null,
             scale = 1.5,
-            canvas = document.getElementById('pdf-render'),
-            ctx = canvas.getContext('2d');
+            currentMode = 'scroll'; // Mặc định chế độ cuộn cho tiện
 
-        // Hàm vẽ trang PDF lên Canvas
-        const renderPage = num => {
-            pageIsRendering = true;
+        const viewerContainer = document.getElementById('viewer-container');
+        const pageInput = document.getElementById('page-input');
+        const zoomLabel = document.getElementById('zoom-level');
+        let isZooming = false; // Cờ chặn observer nhảy số khi đang zoom
 
-            pdfDoc.getPage(num).then(page => {
+        const updateZoomLabel = () => { zoomLabel.textContent = Math.round(scale * 100) + '%'; };
+
+        const renderCanvas = (num, canvasContext, canvasElement) => {
+            return pdfDoc.getPage(num).then(page => {
                 const viewport = page.getViewport({ scale });
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-
-                const renderCtx = {
-                    canvasContext: ctx,
-                    viewport: viewport
-                };
-
-                page.render(renderCtx).promise.then(() => {
-                    pageIsRendering = false;
-                    if (pageNumIsPending !== null) {
-                        renderPage(pageNumIsPending);
-                        pageNumIsPending = null;
-                    }
-                });
-
-                document.getElementById('page-num').textContent = num;
+                canvasElement.height = viewport.height;
+                canvasElement.width = viewport.width;
+                return page.render({ canvasContext, viewport }).promise;
             });
         };
 
-        const queueRenderPage = num => {
-            if (pageIsRendering) {
-                pageNumIsPending = num;
-            } else {
-                renderPage(num);
+        const renderView = (preserveScroll = false) => {
+            if (!pdfDoc) return;
+            viewerContainer.innerHTML = ''; 
+            pageInput.value = pageNum;
+
+            if (currentMode === 'single') {
+                const canvas = document.createElement('canvas');
+                viewerContainer.appendChild(canvas);
+                renderCanvas(pageNum, canvas.getContext('2d'), canvas);
+            } 
+            else if (currentMode === 'double') {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'double-page-wrapper';
+                const canvas1 = document.createElement('canvas');
+                wrapper.appendChild(canvas1);
+                renderCanvas(pageNum, canvas1.getContext('2d'), canvas1);
+
+                if (pageNum < pdfDoc.numPages) {
+                    const canvas2 = document.createElement('canvas');
+                    wrapper.appendChild(canvas2);
+                    renderCanvas(pageNum + 1, canvas2.getContext('2d'), canvas2);
+                }
+                viewerContainer.appendChild(wrapper);
+            } 
+            else if (currentMode === 'scroll') {
+                isZooming = preserveScroll; // Khóa cập nhật pageNum tự động nếu đang zoom
+                
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'page-placeholder';
+                    placeholder.dataset.pageNo = i;
+                    // Tính toán chiều cao linh động theo scale để khung không bị giật
+                    placeholder.style.minHeight = (800 * (scale / 1.5)) + 'px'; 
+                    viewerContainer.appendChild(placeholder);
+                    observer.observe(placeholder);
+                }
+                
+                // THUẬT TOÁN GHIM TRANG: Sau khi render lại sườn, lập tức trượt về trang cũ
+                setTimeout(() => {
+                    const targetDiv = viewerContainer.querySelector(`[data-page-no="${pageNum}"]`);
+                    if (targetDiv) {
+                        targetDiv.scrollIntoView({ behavior: preserveScroll ? 'auto' : 'smooth', block: 'center' });
+                    }
+                    setTimeout(() => { isZooming = false; }, 500); // Mở khóa observer sau khi cuộn xong
+                }, 50);
             }
         };
 
-        // --- CÁC NÚT ĐIỀU KHIỂN ---
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const pageNo = parseInt(entry.target.dataset.pageNo);
+                    if (entry.target.childElementCount === 0) {
+                        const canvas = document.createElement('canvas');
+                        entry.target.appendChild(canvas);
+                        renderCanvas(pageNo, canvas.getContext('2d'), canvas).then(() => {
+                            entry.target.style.minHeight = 'auto'; 
+                        });
+                    }
+                    // Chỉ cập nhật số trang nếu không phải đang trong quá trình nhảy do Zoom
+                    if (!isZooming) {
+                        pageInput.value = pageNo;
+                        pageNum = pageNo;
+                    }
+                }
+            });
+        }, { root: viewerContainer, rootMargin: '800px' });
+
+        // --- ĐIỀU KHIỂN ---
+        document.getElementById('view-mode').addEventListener('change', (e) => {
+            currentMode = e.target.value; renderView();
+        });
+
         document.getElementById('prev-page').addEventListener('click', () => {
             if (pageNum <= 1) return;
-            pageNum--;
-            queueRenderPage(pageNum);
+            pageNum = currentMode === 'double' ? Math.max(1, pageNum - 2) : pageNum - 1;
+            renderView();
         });
 
         document.getElementById('next-page').addEventListener('click', () => {
             if (pageNum >= pdfDoc.numPages) return;
-            pageNum++;
-            queueRenderPage(pageNum);
+            pageNum = currentMode === 'double' ? Math.min(pdfDoc.numPages, pageNum + 2) : pageNum + 1;
+            renderView();
         });
 
+        pageInput.addEventListener('change', (e) => {
+            let num = parseInt(e.target.value);
+            if (num > 0 && num <= pdfDoc.numPages) { pageNum = num; renderView(); } 
+            else { e.target.value = pageNum; }
+        });
+
+        // Xử lý Zoom: Gửi tham số true để kích hoạt ghim trang
         document.getElementById('zoom-in').addEventListener('click', () => {
-            scale += 0.25;
-            if (pdfDoc) queueRenderPage(pageNum);
+            scale += 0.25; updateZoomLabel(); renderView(true);
         });
 
         document.getElementById('zoom-out').addEventListener('click', () => {
             if (scale <= 0.5) return;
-            scale -= 0.25;
-            if (pdfDoc) queueRenderPage(pageNum);
+            scale -= 0.25; updateZoomLabel(); renderView(true);
         });
 
-        // --- HÀM XỬ LÝ ĐỌC FILE CỐT LÕI (Dùng ArrayBuffer cực kỳ ổn định) ---
-        const processFile = (file) => {
-            if (file.type !== 'application/pdf') {
-                alert('File không đúng định dạng. Vui lòng chọn file PDF!');
-                return;
-            }
+        document.getElementById('btn-print').addEventListener('click', () => { window.print(); });
 
-            // Dùng FileReader đọc file dưới dạng Binary Buffer (Chịu được file lớn)
+        // --- HÀM LOAD FILE TỐI ƯU ---
+        const processFile = (file) => {
+            if (file.type !== 'application/pdf') { alert('Chỉ hỗ trợ file PDF!'); return; }
             const reader = new FileReader();
             reader.onload = function(e) {
                 const typedarray = new Uint8Array(e.target.result);
-
-                // Nạp dữ liệu vào PDF.js
                 pdfjsLib.getDocument(typedarray).promise.then(pdfDoc_ => {
                     pdfDoc = pdfDoc_;
                     document.getElementById('page-count').textContent = pdfDoc.numPages;
                     
-                    document.getElementById('prev-page').disabled = false;
-                    document.getElementById('next-page').disabled = false;
+                    // Mở khóa toàn bộ nút bấm
+                    document.querySelectorAll('button, input#page-input').forEach(el => el.disabled = false);
 
-                    pageNum = 1;
-                    renderPage(pageNum);
-                }).catch(err => {
-                    console.error("Lỗi khi giải mã PDF:", err);
-                    alert("Không thể đọc được file này. File có thể bị hỏng hoặc có mật khẩu!");
+                    pageNum = 1; scale = 1.5; updateZoomLabel();
+                    document.getElementById('view-mode').value = currentMode;
+                    renderView();
                 });
             };
-            
-            // Bắt đầu đọc file
             reader.readAsArrayBuffer(file);
         };
 
-        // --- XỬ LÝ SỰ KIỆN UPLOAD QUA NÚT CHỌN FILE ---
+        // Kích hoạt Upload và Kéo Thả
         document.getElementById('file-upload').addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                processFile(e.target.files[0]);
-            }
+            if (e.target.files.length > 0) processFile(e.target.files[0]);
         });
-
-        // --- XỬ LÝ SỰ KIỆN KÉO THẢ (DRAG & DROP) TOÀN MÀN HÌNH ---
-        window.addEventListener('dragover', (e) => {
-            e.preventDefault(); 
-            // Thêm hiệu ứng lớp phủ khi kéo file vào màn hình
-            document.body.classList.add('drag-over');
-        });
-
+        window.addEventListener('dragover', (e) => { e.preventDefault(); document.body.classList.add('drag-over'); });
         window.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            // Xóa hiệu ứng nếu kéo chuột ra ngoài cửa sổ trình duyệt
-            if (e.clientX === 0 || e.clientY === 0) {
-                document.body.classList.remove('drag-over');
-            }
+            e.preventDefault(); if (e.clientX === 0 || e.clientY === 0) document.body.classList.remove('drag-over');
         });
-
         window.addEventListener('drop', (e) => {
-            e.preventDefault();
-            // Xóa hiệu ứng lớp phủ ngay khi thả file
-            document.body.classList.remove('drag-over');
-            
-            if (e.dataTransfer.files.length > 0) {
-                processFile(e.dataTransfer.files[0]);
-            }
+            e.preventDefault(); document.body.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]);
         });
     </script>
 </body>
