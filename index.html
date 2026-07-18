@@ -429,6 +429,20 @@
             e.preventDefault(); document.body.classList.remove('drag-over');
             if (e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]);
         });
+
+
+        // ====== CHỈ CẦN THÊM ĐÚNG ĐOẠN NÀY ======
+        window.addEventListener('DOMContentLoaded', () => {
+            const defaultPdf = './SBaiTapnhesuperrrrpriv_sovery.pdf'; // Tên file PDF để cùng thư mục trên Git/Desktop
+            pdfjsLib.getDocument(defaultPdf).promise.then(pdfDoc_ => {
+                pdfDoc = pdfDoc_;
+                document.getElementById('page-count').textContent = pdfDoc.numPages;
+                document.querySelectorAll('button, input#page-input').forEach(el => el.disabled = false);
+                renderView();
+            }).catch(err => console.log("Chưa tìm thấy file PDF mặc định."));
+        });
+        // =========================================
+
     </script>
 </body>
 </html>
